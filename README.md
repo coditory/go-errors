@@ -88,14 +88,14 @@ caused by: bar failed
 foo failed
 	./go:32
 	./go:10
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/asm_amd64.s:1598
 caused by: bar failed
 	./go:36
 	./go:31
 	./go:10
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/asm_amd64.s:1598
 
 >>> Format: 4
 foo failed
@@ -103,9 +103,9 @@ foo failed
 		main.foo
 	./go:10
 		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/proc.go:250
 		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/asm_amd64.s:1598
 		runtime.goexit
 caused by: bar failed
 	./go:36
@@ -114,31 +114,31 @@ caused by: bar failed
 		main.foo
 	./go:10
 		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/proc.go:250
 		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/asm_amd64.s:1598
 		runtime.goexit
 
 >>> Format: 5
 foo failed
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:32
+	<PROJECT_DIR>/samples/samples.go:32
 		main.foo
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
+	<PROJECT_DIR>/samples/samples.go:10
 		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/proc.go:250
 		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/asm_amd64.s:1598
 		runtime.goexit
 caused by: bar failed
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:36
+	<PROJECT_DIR>/samples/samples.go:36
 		main.bar
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:31
+	<PROJECT_DIR>/samples/samples.go:31
 		main.foo
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
+	<PROJECT_DIR>/samples/samples.go:10
 		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+	go1.20.2/src/runtime/proc.go:250
 		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+	go1.20.2/src/runtime/asm_amd64.s:1598
 		runtime.goexit
 
 >>> Format go error:

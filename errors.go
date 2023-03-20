@@ -19,6 +19,8 @@ var (
 	BasePath            = ""
 	BaseCachePath       = ""
 	BaseModule          = ""
+	BaseGoSrcPath       = ""
+	BaseGoSrcToken      = ""
 	MaxStackDepth       = 32
 	MaxPrintStackFrames = 5
 	MaxPrintCauses      = 5
@@ -42,6 +44,8 @@ func init() {
 		BasePath = "**/" + path.Base(BaseModule)
 	}
 	BaseCachePath = "**/pkg/mod"
+	BaseGoSrcPath = runtime.GOROOT()
+	BaseGoSrcToken = runtime.Version()
 }
 
 type stackTracer interface {
@@ -291,6 +295,11 @@ func (f Frame) RelFile() string {
 			}
 		} else if strings.HasPrefix(name, BaseCachePath) {
 			return name[len(BaseCachePath)+1:]
+		}
+	}
+	if BaseGoSrcPath != "" {
+		if strings.HasPrefix(name, BaseGoSrcPath) {
+			return fmt.Sprintf("%s/%s", BaseGoSrcToken, name[len(BaseGoSrcPath)+1:])
 		}
 	}
 	return name
