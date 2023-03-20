@@ -1,0 +1,20 @@
+source:
+  - "**/*.go"
+
+build:
+  - "Makefile"
+  - "go.mod"
+  - "go.sum"
+
+ci:
+  - ".github/**"
+
+documentation:
+  - "**/*.md"
+  - "docs/**"
+
+license:
+  - "LICENSE"
+
+git:
+  - ".gitignore"

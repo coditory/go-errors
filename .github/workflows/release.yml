@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: |
+          Release version in semantic format (like: 1.2.3).
+          Default: a version with incremented patch number.
+        required: false
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate build succeeded
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          declare -r BUILD_SUCCESS="$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/actions/runs?status=success\&head_sha=${{ github.sha }} \
+            | jq 'limit(1; .workflow_runs[] | select(.name == "Build" and .conclusion == "success"))')"
+          declare -r LAST_AUTHOR="$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/commits/${{ github.sha }} \
+            | jq -r '.author.login')"
+          if [ "$LAST_AUTHOR" != "coditory-bot" ] && [ -z "$BUILD_SUCCESS" ]; then
+            echo "Last commit did not pass Build!"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CI_TOKEN }}
+
+      - name: Get versions
+        id: versions
+        env:
+          NEXT_INPUT_VERSION: ${{ inputs.version }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          declare -r GIT_VERSION="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n 1 | cut -c2-)"
+          declare -r VERSION=${GIT_VERSION:-0.0.0}
+          declare -r MAJOR="$(echo "$VERSION" | cut -d. -f1)"
+          declare -r MINOR="$(echo "$VERSION" | cut -d. -f2)"
+          declare -r PATCH="$(echo "$VERSION" | cut -d. -f3)"
+          declare -r NEXT_TAG_VERSION="$([[ "$TAG_NAME" =~ v.* ]] \
+            && (echo "$TAG_NAME" | cut -c2-) \
+            || echo "$TAG_NAME")"
+          declare -r NEXT_MANUAL_VERSION="${NEXT_INPUT_VERSION:-$NEXT_TAG_VERSION}"
+          declare -r NEXT_PATCH_VERSION="$MAJOR.$MINOR.$(( $PATCH + 1 ))"
+          declare -r NEXT_VERSION="${NEXT_MANUAL_VERSION:-$NEXT_PATCH_VERSION}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo -e "VERSION: $VERSION\nNEXT_VERSION: $NEXT_VERSION"
+
+      - name: Import gpg key
+        id: gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_committer_name: Coditory Bot
+          git_committer_email: bot@coditory.com
+
+      - name: Update version in readme
+        if: steps.gpg.conclusion == 'success'
+        env:
+          PREV_VERSION: ${{ steps.versions.outputs.version }}
+          NEXT_VERSION: ${{ steps.versions.outputs.next_version }}
+        run: |
+          declare -r ESC_PREV_VERSION="${PREV_VERSION//./\\.}"
+          echo "Changing: $PREV_VERSION -> $NEXT_VERSION"
+          sed -i "s|${ESC_PREV_VERSION}|${NEXT_VERSION}|" README.md
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -a -m "Update version $PREV_VERSION -> $NEXT_VERSION" -m "[ci skip]"
+            git push origin main
+          else
+            echo "Nothing changed. Skipping commit."
+          fi
+
+      - name: Generate release notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREV_VERSION: ${{ steps.versions.outputs.version }}
+          NEXT_VERSION: ${{ steps.versions.outputs.next_version }}
+        run: |
+          declare -r NOTES="$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="v$NEXT_VERSION" \
+            -f target_commitish='main' \
+            -f previous_tag_name="v$PREV_VERSION" \
+            | jq -r '.body')"
+          declare -r ESCAPED="${NOTES//$'\n'/'%0A'}"
+          echo "notes=$ESCAPED" >> $GITHUB_OUTPUT
+
+      - name: Create github release
+        if: steps.notes.conclusion == 'success'
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          body: ${{ steps.notes.outputs.notes }}
+          draft: false
+          tag: v${{ steps.versions.outputs.next_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}

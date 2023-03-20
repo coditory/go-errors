@@ -1,0 +1,48 @@
+name: Build
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: |
+      github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.1
+
+      - name: Build
+        run: make ci
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v3
+        if: always()
+        with:
+          annotations_limit: 10
+          report_paths: "out/report/test/junit-report.xml"
+
+      - name: Publish coverage report
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "out/report/test/coverage.out"
+          verbose: true
+
+      - name: Upload reports artifact
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: build-reports
+          retention-days: 7
+          path: |
+            out/**/*.xml
+            out/**/*.html
+            out/**/*.cov
