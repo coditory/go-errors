@@ -1,13 +1,12 @@
 package errors
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"path"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"strings"
 )
 
@@ -16,6 +15,7 @@ import (
 var (
 	As                  = errors.As
 	Unwrap              = errors.Unwrap
+	Verbosity           = 2
 	BasePath            = ""
 	BaseCachePath       = ""
 	BaseModule          = ""
@@ -23,6 +23,17 @@ var (
 	MaxPrintStackFrames = 5
 	MaxPrintCauses      = 5
 )
+
+func Formatv(err error, verbosity int) string {
+	if serr, ok := err.(*Error); ok {
+		return serr.StackTraceString(verbosity)
+	}
+	return err.Error() + "\n"
+}
+
+func Format(err error) string {
+	return Formatv(err, Verbosity)
+}
 
 func init() {
 	bi, ok := debug.ReadBuildInfo()
@@ -65,30 +76,23 @@ func (e *Error) StackTrace() StackTrace {
 	return newStackTrace(e.stack)
 }
 
-func (e *Error) Format(s fmt.State, verb rune) {
-	switch verb {
-	case 'v':
-		e.formatCauses(s)
-	case 's':
-		write(s, e.Error())
-	case 'q':
-		fmt.Fprintf(s, "%q", e.Error())
+func (e *Error) StackTraceString(verbosity int) string {
+	if verbosity <= 0 {
+		return e.Error() + "\n"
 	}
-}
-
-func (e *Error) formatCauses(s fmt.State) {
 	var err error
 	err = e
+	buf := bytes.NewBufferString("")
 	causes := 0
 	for err != nil && causes < MaxPrintCauses {
 		msg := err.Error()
 		if causes == 0 {
-			fmt.Fprintf(s, "%s\n", msg)
+			fmt.Fprintf(buf, "%s\n", msg)
 		} else {
-			fmt.Fprintf(s, "caused by: %s\n", msg)
+			fmt.Fprintf(buf, "caused by: %s\n", msg)
 		}
 		serr, ok := err.(stackTracer)
-		if ok {
+		if ok && verbosity > 1 {
 			stacktrace := serr.StackTrace()
 			n := MaxPrintStackFrames
 			if n > len(stacktrace) {
@@ -96,21 +100,24 @@ func (e *Error) formatCauses(s fmt.State) {
 			}
 			for i := 0; i < n; i++ {
 				frame := stacktrace[i]
-				if s.Flag('+') {
-					fmt.Fprintf(s, "\t%s:%d\n", frame, frame)
-					fmt.Fprintf(s, "\t\t%n\n", frame)
-				} else if s.Flag('#') {
-					fmt.Fprintf(s, "\t%+s:%d\n", frame, frame)
-					fmt.Fprintf(s, "\t\t%+n\n", frame)
-				} else {
-					fmt.Fprintf(s, "\t%n:%d\n", frame, frame)
+				switch verbosity {
+				case 2:
+					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFuncName(), frame.Line())
+				case 3:
+					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
+				case 4:
+					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
+					fmt.Fprintf(buf, "\t\t%s\n", frame.RelFuncName())
+				default:
+					fmt.Fprintf(buf, "\t%s:%d\n", frame.File(), frame.Line())
+					fmt.Fprintf(buf, "\t\t%s\n", frame.FuncName())
 				}
 			}
 			if n < len(stacktrace) {
 				if len(stacktrace) >= MaxStackDepth {
-					fmt.Fprintf(s, "\t...skipped")
+					fmt.Fprintf(buf, "\t...skipped")
 				} else {
-					fmt.Fprintf(s, "\t...skipped: %d\n", len(stacktrace)-MaxPrintStackFrames)
+					fmt.Fprintf(buf, "\t...skipped: %d\n", len(stacktrace)-MaxPrintStackFrames)
 				}
 			}
 		}
@@ -121,9 +128,10 @@ func (e *Error) formatCauses(s fmt.State) {
 		}
 		causes++
 		if causes >= MaxPrintCauses {
-			write(s, "...skipped\n")
+			fmt.Fprint(buf, "...skipped\n")
 		}
 	}
+	return buf.String()
 }
 
 // Creates a new error with a stack trace.
@@ -214,74 +222,44 @@ func Is(e error, original error) bool {
 // its value represents the program counter + 1.
 type Frame uintptr
 
-// pc returns the program counter for this frame;
+// Pc returns the program counter for this frame;
 // multiple frames may have the same PC value.
-func (f Frame) pc() uintptr { return uintptr(f) - 1 }
+func (f Frame) Pc() uintptr { return uintptr(f) - 1 }
 
-// file returns the full path to the file that contains the
+// File returns the full path to the File that contains the
 // function for this Frame's pc.
-func (f Frame) file() string {
-	fn := runtime.FuncForPC(f.pc())
+func (f Frame) File() string {
+	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return "unknown"
 	}
-	file, _ := fn.FileLine(f.pc())
+	file, _ := fn.FileLine(f.Pc())
 	return file
 }
 
-// line returns the line number of source code of the
+// Line returns the Line number of source code of the
 // function for this Frame's pc.
-func (f Frame) line() int {
-	fn := runtime.FuncForPC(f.pc())
+func (f Frame) Line() int {
+	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return 0
 	}
-	_, line := fn.FileLine(f.pc())
+	_, line := fn.FileLine(f.Pc())
 	return line
 }
 
-// name returns the name of this function, if known.
-func (f Frame) name() string {
-	fn := runtime.FuncForPC(f.pc())
+// FuncName returns the FuncName of this function, if known.
+func (f Frame) FuncName() string {
+	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return "unknown"
 	}
 	return fn.Name()
 }
 
-// Format formats the frame according to the fmt.Formatter interface.
-//
-//	%s    source file relative to the compile time GOPATH
-//	%d    source line
-//	%n    function name without package
-//
-// Format accepts flags that alter the printing of some verbs, as follows:
-//
-//	%+s   full source file path
-//	%+n   function name with package
-func (f Frame) Format(s fmt.State, verb rune) {
-	switch verb {
-	case 's':
-		switch {
-		case s.Flag('+'):
-			write(s, f.file())
-		default:
-			write(s, relName(f.file()))
-		}
-	case 'd':
-		write(s, strconv.Itoa(f.line()))
-	case 'n':
-		switch {
-		case s.Flag('+'):
-			write(s, f.name())
-		default:
-			write(s, relFuncname(f.name()))
-		}
-	}
-}
-
 // function name relative to main package
-func relFuncname(name string) string {
+func (f Frame) RelFuncName() string {
+	name := f.FuncName()
 	if BaseModule != "" && strings.HasPrefix(name, BaseModule) {
 		name = "./" + name[len(BaseModule)+1:]
 	}
@@ -289,7 +267,8 @@ func relFuncname(name string) string {
 }
 
 // file name relateive to BasePath or BaseCachePath
-func relName(name string) string {
+func (f Frame) RelFile() string {
+	name := f.File()
 	if BasePath != "" {
 		if strings.HasPrefix(BasePath, "**/") {
 			i := strings.Index(name, BasePath[3:])
@@ -315,10 +294,6 @@ func relName(name string) string {
 		}
 	}
 	return name
-}
-
-func write(state fmt.State, text string) {
-	_, _ = io.WriteString(state, text)
 }
 
 func messageFromMsgAndArgs(msgAndArgs ...interface{}) string {

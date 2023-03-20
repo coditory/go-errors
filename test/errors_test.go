@@ -31,8 +31,8 @@ func (suite *ErrorsSuite) TestNewError() {
 
 	suite.Nil(err.Unwrap())
 
-	suite.Equal("./test/errors_test.go", frameFile(err, 0))
-	suite.Equal("./test_test.(*ErrorsSuite).TestNewError", frameFunc(err, 0))
+	suite.Equal("./test/errors_test.go", frameRelFile(err, 0))
+	suite.Equal("./test_test.(*ErrorsSuite).TestNewError", frameRelFunc(err, 0))
 }
 
 func (suite *ErrorsSuite) TestIs() {
@@ -72,14 +72,14 @@ func (suite *ErrorsSuite) TestAs() {
 	}
 }
 
-func frameFile(err *errors.Error, idx int) string {
+func frameRelFile(err *errors.Error, idx int) string {
 	frame := err.StackTrace()[idx]
-	return fmt.Sprintf("%s", frame)
+	return frame.RelFile()
 }
 
-func frameFunc(err *errors.Error, idx int) string {
+func frameRelFunc(err *errors.Error, idx int) string {
 	frame := err.StackTrace()[idx]
-	return fmt.Sprintf("%n", frame)
+	return frame.RelFuncName()
 }
 
 type errorString string
