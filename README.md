@@ -31,6 +31,83 @@ The exported package is `errors`, basic usage:
 import "github.com/coditory/go-errors"
 
 func main() {
-  // TBD
+	err := foo()
+	fmt.Printf("\n>>> Format %%s:\n%s", err)
+	fmt.Printf("\n>>> Format %%v:\n%v", err)
+	fmt.Printf("\n>>> Format %%+v:\n%+v", err)
+	fmt.Printf("\n>>> Format %%#v:\n%#v", err)
 }
+
+func foo() error {
+	err := bar()
+	return errors.Wrap(err, "foo failed")
+}
+
+func bar() error {
+	return errors.New("bar failed")
+}
+```
+
+Output for `go run ./samples`
+
+```
+>>> Format %s:
+foo failed
+
+>>> Format %v:
+foo failed
+	main.foo:19
+	main.main:10
+	runtime.main:250
+	runtime.goexit:1598
+caused by: bar failed
+	main.bar:23
+	main.foo:18
+	main.main:10
+	runtime.main:250
+	runtime.goexit:1598
+
+>>> Format %+v:
+foo failed
+	./samples.go:19
+		main.foo
+	./samples.go:10
+		main.main
+	<GO_SRC_DIR>/runtime/proc.go:250
+		runtime.main
+	<GO_SRC_DIR>/runtime/asm_amd64.s:1598
+		runtime.goexit
+caused by: bar failed
+	./samples.go:23
+		main.bar
+	./samples.go:18
+		main.foo
+	./samples.go:10
+		main.main
+	<GO_SRC_DIR>/runtime/proc.go:250
+		runtime.main
+	<GO_SRC_DIR>/runtime/asm_amd64.s:1598
+		runtime.goexit
+
+>>> Format %#v:
+foo failed
+	<PROJECT_DIR>/samples/samples.go:19
+		main.foo
+	<PROJECT_DIR>/samples/samples.go:10
+		main.main
+	<GO_SRC_DIR>/runtime/proc.go:250
+		runtime.main
+	<GO_SRC_DIR>/runtime/asm_amd64.s:1598
+		runtime.goexit
+caused by: bar failed
+	<PROJECT_DIR>/samples/samples.go:23
+		main.bar
+	<PROJECT_DIR>/samples/samples.go:18
+		main.foo
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
+		main.main
+	<GO_SRC_DIR>/runtime/proc.go:250
+		runtime.main
+	<GO_SRC_DIR>/runtime/asm_amd64.s:1598
+		runtime.goexit
 ```

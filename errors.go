@@ -48,9 +48,6 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	if e.message != "" && e.err != nil {
-		return fmt.Sprintf("%s: %s", e.message, e.err.Error())
-	}
 	if e.message != "" {
 		return e.message
 	}
@@ -71,7 +68,7 @@ func (e *Error) StackTrace() StackTrace {
 func (e *Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
-		e.formatCauses(s, s.Flag('+'))
+		e.formatCauses(s)
 	case 's':
 		write(s, e.Error())
 	case 'q':
@@ -79,7 +76,7 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	}
 }
 
-func (e *Error) formatCauses(s fmt.State, plus bool) {
+func (e *Error) formatCauses(s fmt.State) {
 	var err error
 	err = e
 	causes := 0
@@ -99,9 +96,12 @@ func (e *Error) formatCauses(s fmt.State, plus bool) {
 			}
 			for i := 0; i < n; i++ {
 				frame := stacktrace[i]
-				if plus {
+				if s.Flag('+') {
 					fmt.Fprintf(s, "\t%s:%d\n", frame, frame)
 					fmt.Fprintf(s, "\t\t%n\n", frame)
+				} else if s.Flag('#') {
+					fmt.Fprintf(s, "\t%+s:%d\n", frame, frame)
+					fmt.Fprintf(s, "\t\t%+n\n", frame)
 				} else {
 					fmt.Fprintf(s, "\t%n:%d\n", frame, frame)
 				}
@@ -113,10 +113,6 @@ func (e *Error) formatCauses(s fmt.State, plus bool) {
 					fmt.Fprintf(s, "\t...skipped: %d\n", len(stacktrace)-MaxPrintStackFrames)
 				}
 			}
-		}
-		if werr, ok := err.(*Error); ok {
-			// deduplicate wrapped error message
-			err = werr.Unwrap()
 		}
 		if werr, ok := err.(wrapper); ok {
 			err = werr.Unwrap()
@@ -298,7 +294,11 @@ func relName(name string) string {
 		if strings.HasPrefix(BasePath, "**/") {
 			i := strings.Index(name, BasePath[3:])
 			if i > 0 {
-				return "./" + name[i+len(BasePath)-2:]
+				name = name[i+len(BasePath)-2:]
+				for strings.HasPrefix(name, BasePath[3:]) {
+					name = name[len(BasePath)-2:]
+				}
+				return "./" + name
 			}
 		} else if strings.HasPrefix(name, BasePath) {
 			return name[len(BasePath)+1:]

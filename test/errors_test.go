@@ -13,31 +13,10 @@ import (
 
 type ErrorsSuite struct {
 	suite.Suite
-	BackupBasePath      string
-	BackupBaseModule    string
-	BackupBaseCachePath string
 }
 
 func TestErrorsSuite(t *testing.T) {
 	suite.Run(t, new(ErrorsSuite))
-}
-
-func (suite *ErrorsSuite) SetupSuite() {
-	suite.BackupBaseModule = errors.BaseModule
-	suite.BackupBasePath = errors.BasePath
-	suite.BackupBaseCachePath = errors.BaseCachePath
-}
-
-func (suite *ErrorsSuite) TearDownSuite() {
-	errors.BaseModule = suite.BackupBaseModule
-	errors.BasePath = suite.BackupBasePath
-	errors.BaseCachePath = suite.BackupBaseCachePath
-}
-
-func (suite *ErrorsSuite) SetupTest() {
-	errors.BaseModule = "github.com/coditory/go-errors"
-	errors.BasePath = "**/go-errors"
-	errors.BaseCachePath = "**/mod/pkg"
 }
 
 func (suite *ErrorsSuite) TestNewError() {
