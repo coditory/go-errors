@@ -4,26 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"path"
 	"runtime"
-	"runtime/debug"
 	"strings"
 )
 
 // Export a number of functions or variables from pkg/errors. We want people to be able to
 // use them, if only via the entrypoints we've vetted in this file.
 var (
-	As                  = errors.As
-	Unwrap              = errors.Unwrap
-	Verbosity           = 2
-	BasePath            = ""
-	BaseCachePath       = ""
-	BaseModule          = ""
-	BaseGoSrcPath       = ""
-	BaseGoSrcToken      = ""
-	MaxStackDepth       = 32
-	MaxPrintStackFrames = 5
-	MaxPrintCauses      = 5
+	As     = errors.As
+	Unwrap = errors.Unwrap
 )
 
 func Formatv(err error, verbosity int) string {
@@ -34,18 +23,7 @@ func Formatv(err error, verbosity int) string {
 }
 
 func Format(err error) string {
-	return Formatv(err, Verbosity)
-}
-
-func init() {
-	bi, ok := debug.ReadBuildInfo()
-	if ok && bi.Path != "" {
-		BaseModule = bi.Path
-		BasePath = "**/" + path.Base(BaseModule)
-	}
-	BaseCachePath = "**/pkg/mod"
-	BaseGoSrcPath = runtime.GOROOT()
-	BaseGoSrcToken = runtime.Version()
+	return Formatv(err, Config.Verbosity)
 }
 
 type stackTracer interface {
@@ -81,6 +59,9 @@ func (e *Error) StackTrace() StackTrace {
 }
 
 func (e *Error) StackTraceString(verbosity int) string {
+	if Config.StackTraceFormatter != nil {
+		return Config.StackTraceFormatter(e, verbosity)
+	}
 	if verbosity <= 0 {
 		return e.Error() + "\n"
 	}
@@ -88,7 +69,7 @@ func (e *Error) StackTraceString(verbosity int) string {
 	err = e
 	buf := bytes.NewBufferString("")
 	causes := 0
-	for err != nil && causes < MaxPrintCauses {
+	for err != nil && causes < Config.MaxPrintCauses {
 		msg := err.Error()
 		if causes == 0 {
 			fmt.Fprintf(buf, "%s\n", msg)
@@ -98,7 +79,7 @@ func (e *Error) StackTraceString(verbosity int) string {
 		serr, ok := err.(stackTracer)
 		if ok && verbosity > 1 {
 			stacktrace := serr.StackTrace()
-			n := MaxPrintStackFrames
+			n := Config.MaxPrintStackFrames
 			if n > len(stacktrace) {
 				n = len(stacktrace)
 			}
@@ -110,6 +91,8 @@ func (e *Error) StackTraceString(verbosity int) string {
 				case 3:
 					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
 				case 4:
+					fmt.Fprintf(buf, "\t%s:%d %s\n", frame.RelFile(), frame.Line(), frame.RelFuncName())
+				case 5:
 					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
 					fmt.Fprintf(buf, "\t\t%s\n", frame.RelFuncName())
 				default:
@@ -118,10 +101,10 @@ func (e *Error) StackTraceString(verbosity int) string {
 				}
 			}
 			if n < len(stacktrace) {
-				if len(stacktrace) >= MaxStackDepth {
-					fmt.Fprintf(buf, "\t...skipped")
+				if len(stacktrace) >= Config.MaxStackDepth {
+					fmt.Fprintf(buf, "\t...skipped\n")
 				} else {
-					fmt.Fprintf(buf, "\t...skipped: %d\n", len(stacktrace)-MaxPrintStackFrames)
+					fmt.Fprintf(buf, "\t...skipped: %d\n", len(stacktrace)-Config.MaxPrintStackFrames)
 				}
 			}
 		}
@@ -131,7 +114,7 @@ func (e *Error) StackTraceString(verbosity int) string {
 			err = nil
 		}
 		causes++
-		if causes >= MaxPrintCauses {
+		if causes >= Config.MaxPrintCauses {
 			fmt.Fprint(buf, "...skipped\n")
 		}
 	}
@@ -140,6 +123,10 @@ func (e *Error) StackTraceString(verbosity int) string {
 
 // Creates a new error with a stack trace.
 // Supports interpolating of message parameters.
+//
+// Example:
+// err := err.New("error %d", 42)
+// err.Error() == "error 42"
 func New(msg string, args ...interface{}) *Error {
 	return &Error{
 		message: fmt.Sprintf(msg, args...),
@@ -148,12 +135,38 @@ func New(msg string, args ...interface{}) *Error {
 }
 
 // Creates a new error with a cause and a stack trace.
+// Supports interpolating of message parameters.
+//
+// Example:
+// wrapped := fmt.Errorf("wrapped")
+// err := errors.wrap(wrapped, "errored happened")
+// err.Error() == "error happened"
+// err.Unwrap() == wrapped
 func Wrap(err error, msgAndArgs ...interface{}) *Error {
 	if err == nil {
 		return nil
 	}
 	return &Error{
 		message: messageFromMsgAndArgs(msgAndArgs...),
+		err:     err,
+		stack:   callers(1),
+	}
+}
+
+// Similiar to wrap. Creates a new error with message that prefixes wrapped errro.
+// Supports interpolating of message parameters.
+//
+// Example:
+// wrapped := fmt.Errorf("wrapped")
+// err := errors.Prefix(wrapped, "errored happened")
+// err.Error() == "error happened: wrapped"
+// err.Unwrap() == wrapped
+func Prefix(err error, msg string, args ...interface{}) *Error {
+	if err == nil {
+		return nil
+	}
+	return &Error{
+		message: fmt.Sprintf(msg, args...) + ": " + err.Error(),
 		err:     err,
 		stack:   callers(1),
 	}
@@ -180,15 +193,37 @@ func RecoverPanic(r interface{}, errPtr *error) {
 	if err != nil {
 		// 2 skips: errors.go and defer
 		*errPtr = &Error{
-			message: "caught panic",
+			message: "caught panic: " + err.Error(),
 			err:     err,
-			stack:   callers(2),
+			stack:   callers(3),
 		}
 	}
 }
 
+// Recover executes a function and turns a panic into an error.
+//
+// Example:
+//
+//	err := errors.Recover(func() {
+//	  somePanicingLogic()
+//	})
+func Recover(action func()) error {
+	err := func() (err error) {
+		defer func() {
+			RecoverPanic(recover(), &err)
+			if err != nil {
+				e := err.(*Error)
+				e.stack = callers(5)
+			}
+		}()
+		action()
+		return nil
+	}()
+	return err
+}
+
 func callers(skip int) []uintptr {
-	pc := make([]uintptr, MaxStackDepth)
+	pc := make([]uintptr, Config.MaxStackDepth)
 	n := runtime.Callers(skip+2, pc)
 	return pc[:n]
 }
@@ -264,8 +299,8 @@ func (f Frame) FuncName() string {
 // function name relative to main package
 func (f Frame) RelFuncName() string {
 	name := f.FuncName()
-	if BaseModule != "" && strings.HasPrefix(name, BaseModule) {
-		name = "./" + name[len(BaseModule)+1:]
+	if Config.BaseModule != "" && strings.HasPrefix(name, Config.BaseModule) {
+		name = "./" + name[len(Config.BaseModule):]
 	}
 	return name
 }
@@ -273,36 +308,36 @@ func (f Frame) RelFuncName() string {
 // file name relateive to BasePath or BaseCachePath
 func (f Frame) RelFile() string {
 	name := f.File()
-	if BasePath != "" {
-		if strings.HasPrefix(BasePath, "**/") {
-			i := strings.Index(name, BasePath[3:])
-			if i > 0 {
-				name = name[i+len(BasePath)-2:]
-				for strings.HasPrefix(name, BasePath[3:]) {
-					name = name[len(BasePath)-2:]
-				}
-				return "./" + name
-			}
-		} else if strings.HasPrefix(name, BasePath) {
-			return name[len(BasePath)+1:]
-		}
+	relPath, ok := trimBasePath(Config.BasePath, name)
+	if ok {
+		return relPath
 	}
-	if BaseCachePath != "" {
-		if strings.HasPrefix(BaseCachePath, "**/") {
-			i := strings.Index(name, BaseCachePath[3:])
-			if i > 0 {
-				return name[i+len(BaseCachePath)-2:]
-			}
-		} else if strings.HasPrefix(name, BaseCachePath) {
-			return name[len(BaseCachePath)+1:]
-		}
+	relPath, ok = trimBasePath(Config.BaseCachePath, name)
+	if ok {
+		return relPath
 	}
-	if BaseGoSrcPath != "" {
-		if strings.HasPrefix(name, BaseGoSrcPath) {
-			return fmt.Sprintf("%s/%s", BaseGoSrcToken, name[len(BaseGoSrcPath)+1:])
+	baseGoSrcPath := Config.BaseGoSrcPath
+	if baseGoSrcPath != "" {
+		if strings.HasPrefix(name, baseGoSrcPath) {
+			return fmt.Sprintf("%s/%s", Config.BaseGoSrcToken, name[len(baseGoSrcPath)+1:])
 		}
 	}
 	return name
+}
+
+func trimBasePath(basePath string, path string) (string, bool) {
+	if basePath == "" {
+		return "", false
+	}
+	if strings.HasPrefix(basePath, "**/") {
+		i := strings.Index(path, basePath[3:])
+		if i > 0 {
+			return "./" + path[i+len(basePath)-3:], true
+		}
+	} else if strings.HasPrefix(path, basePath) {
+		return "./" + path[len(basePath):], true
+	}
+	return "", false
 }
 
 func messageFromMsgAndArgs(msgAndArgs ...interface{}) string {

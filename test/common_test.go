@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	errors.BaseModule = "github.com/coditory/go-errors"
-	errors.BasePath = "**/go-errors"
-	errors.BaseCachePath = "**/mod/pkg"
+	errors.Config.BaseModule = "github.com/coditory/go-errors/"
+	errors.Config.BasePath = "**/go-errors/"
+	errors.Config.BaseCachePath = "**/mod/pkg/"
 }

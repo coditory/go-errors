@@ -19,8 +19,10 @@ func main() {
 	// 4: error + causes with stack traces of relative file names and lines
 	//                        ...and relative func names
 	fmt.Printf("\n>>> Format: 4\n%s", errors.Formatv(err, 4))
-	// 5: like 4 but uses absolute file names and func names
+	// 5: like 4 but in single line
 	fmt.Printf("\n>>> Format: 5\n%s", errors.Formatv(err, 5))
+	// 6: like 4 but uses absolute file names and func names
+	fmt.Printf("\n>>> Format: 6\n%s", errors.Formatv(err, 6))
 
 	// standard errors are formatted with err.Error()
 	goerr := fmt.Errorf("go error")

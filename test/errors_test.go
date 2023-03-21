@@ -35,6 +35,100 @@ func (suite *ErrorsSuite) TestNewError() {
 	suite.Equal("./test_test.(*ErrorsSuite).TestNewError", frameRelFunc(err, 0))
 }
 
+func (suite *ErrorsSuite) TestWrapError() {
+	werr := errors.New("bar")
+
+	err := errors.Wrap(werr, "foo")
+	suite.Equal("foo", err.Error())
+
+	err = errors.Wrap(werr, "foo %s", "baz")
+	suite.Equal("foo baz", err.Error())
+
+	suite.Equal(werr, err.Unwrap())
+
+	suite.Equal("./test/errors_test.go", frameRelFile(err, 0))
+	suite.Equal("./test_test.(*ErrorsSuite).TestWrapError", frameRelFunc(err, 0))
+}
+
+func (suite *ErrorsSuite) TestPrefixError() {
+	werr := errors.New("bar")
+
+	err := errors.Prefix(werr, "foo")
+	suite.Equal("foo: bar", err.Error())
+
+	err = errors.Prefix(werr, "foo %s", "baz")
+	suite.Equal("foo baz: bar", err.Error())
+
+	suite.Equal(werr, err.Unwrap())
+
+	suite.Equal("./test/errors_test.go", frameRelFile(err, 0))
+	suite.Equal("./test_test.(*ErrorsSuite).TestPrefixError", frameRelFunc(err, 0))
+}
+
+func (suite *ErrorsSuite) TestRecoverPanic() {
+	tests := []struct {
+		err      any
+		expected string
+	}{
+		{"some text", "caught panic: some text"},
+		{fmt.Errorf("go err"), "caught panic: go err"},
+		{io.EOF, "caught panic: EOF"},
+		{errors.New("some err"), "caught panic: some err"},
+	}
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%v", tt.err)
+		suite.Run(name, func() {
+			do := func() (err error) {
+				defer func() {
+					errors.RecoverPanic(recover(), &err)
+				}()
+				panic(tt.err)
+			}
+			err := do().(*errors.Error)
+			suite.Equal(tt.expected, err.Error())
+			if serr, ok := tt.err.(string); ok {
+				suite.Equal(fmt.Errorf(serr), err.Unwrap())
+			} else {
+				suite.Equal(tt.err, err.Unwrap())
+			}
+			suite.Equal("./test/errors_test.go", frameRelFile(err, 0))
+			suite.Equal("./test_test.(*ErrorsSuite).TestRecoverPanic.func1.1", frameRelFunc(err, 0))
+			suite.Equal("./test_test.(*ErrorsSuite).TestRecoverPanic.func1", frameRelFunc(err, 1))
+		})
+	}
+}
+
+func (suite *ErrorsSuite) TestRecover() {
+	tests := []struct {
+		err      any
+		expected string
+	}{
+		{"some text", "caught panic: some text"},
+		{fmt.Errorf("go err"), "caught panic: go err"},
+		{io.EOF, "caught panic: EOF"},
+		{errors.New("some err"), "caught panic: some err"},
+	}
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%v", tt.err)
+		suite.Run(name, func() {
+			do := func() {
+				panic(tt.err)
+			}
+			err := errors.Recover(do).(*errors.Error)
+			suite.Equal(tt.expected, err.Error())
+			if serr, ok := tt.err.(string); ok {
+				suite.Equal(fmt.Errorf(serr), err.Unwrap())
+			} else {
+				suite.Equal(tt.err, err.Unwrap())
+			}
+			suite.Equal("./test/errors_test.go", frameRelFile(err, 0))
+			suite.Equal("./test_test.(*ErrorsSuite).TestRecover.func1", frameRelFunc(err, 0))
+		})
+	}
+}
+
 func (suite *ErrorsSuite) TestIs() {
 	err := errors.New("err")
 	suite.True(errors.Is(err, err),
