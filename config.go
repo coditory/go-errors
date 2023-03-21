@@ -20,7 +20,7 @@ var Config struct {
 }
 
 func init() {
-	Config.Verbosity = 4
+	Config.Verbosity = 5
 	Config.MaxStackDepth = 32
 	Config.MaxPrintCauses = 5
 	Config.MaxPrintStackFrames = 5
