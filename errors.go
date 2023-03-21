@@ -310,7 +310,7 @@ func (f Frame) RelFile() string {
 	name := f.File()
 	relPath, ok := trimBasePath(Config.BasePath, name)
 	if ok {
-		return relPath
+		return "./" + relPath
 	}
 	relPath, ok = trimBasePath(Config.BaseCachePath, name)
 	if ok {
@@ -332,10 +332,10 @@ func trimBasePath(basePath string, path string) (string, bool) {
 	if strings.HasPrefix(basePath, "**/") {
 		i := strings.LastIndex(path, basePath[3:])
 		if i > 0 {
-			return "./" + path[i+len(basePath)-3:], true
+			return path[i+len(basePath)-3:], true
 		}
 	} else if strings.HasPrefix(path, basePath) {
-		return "./" + path[len(basePath):], true
+		return path[len(basePath):], true
 	}
 	return "", false
 }

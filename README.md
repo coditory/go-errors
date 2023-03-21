@@ -55,16 +55,25 @@ Output:
 ```
 Error with stack trace:
 foo failed
-    ./samples.go:34 main.foo
-    ./samples.go:10 main.main
-    go1.20.2/rc/runtime/proc.go:250 runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./pkg/samples.go:34
+        main.foo
+    ./pkg/samples.go:10
+        main.main
+    go1.20.2/rc/runtime/proc.go:250
+        runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598
+        runtime.goexit
 caused by: bar failed
-    ./samples.go:38 main.bar
-    ./samples.go:33 main.foo
-    ./samples.go:10 main.main
-    go1.20.2/rc/runtime/proc.go:250 runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./pkg/samples.go:38
+        main.bar
+    ./pkg/samples.go:33
+        main.foo
+    ./pkg/samples.go:10
+        main.main
+    go1.20.2/rc/runtime/proc.go:250
+        runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598
+        runtime.goexit
 
 Go std error:
 std error
@@ -78,10 +87,10 @@ Errors can be formatted with different verbosity levels with:
 fmt.Println(errors.Formatv(err), verbosity)
 
 ...or by changing the global verbosity level:
-errors.Config.Verbosity = 4
+errors.Config.Verbosity = 5
 ```
 
-The default verbosity level is 4.
+The default verbosity level is 5.
 
 Verbosity level samples generated with `go run ./samples`:
 ```
@@ -118,7 +127,7 @@ caused by: bar failed
     go1.20.2/rc/runtime/proc.go:250
     go1.20.2/rc/runtime/asm_amd64.s:1598
 
->>> Verbosity: 4 (DEFAULT)
+>>> Verbosity: 4
 foo failed
     ./samples.go:34 main.foo
     ./samples.go:10 main.main
@@ -131,7 +140,7 @@ caused by: bar failed
     go1.20.2/rc/runtime/proc.go:250 runtime.main
     go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
 
->>> Verbosity: 5
+>>> Verbosity: 5 (DEFAULT)
 foo failed
     ./samples.go:34
         main.foo
