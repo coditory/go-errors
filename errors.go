@@ -85,19 +85,29 @@ func (e *Error) StackTraceString(verbosity int) string {
 			}
 			for i := 0; i < n; i++ {
 				frame := stacktrace[i]
-				switch verbosity {
-				case 2:
-					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFuncName(), frame.Line())
-				case 3:
-					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
-				case 4:
-					fmt.Fprintf(buf, "\t%s:%d %s\n", frame.RelFile(), frame.Line(), frame.RelFuncName())
-				case 5:
-					fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFile(), frame.Line())
-					fmt.Fprintf(buf, "\t\t%s\n", frame.RelFuncName())
-				default:
-					fmt.Fprintf(buf, "\t%s:%d\n", frame.File(), frame.Line())
-					fmt.Fprintf(buf, "\t\t%s\n", frame.FuncName())
+				if Config.FrameFormatter != nil {
+					Config.FrameFormatter(buf, &frame, verbosity)
+				} else {
+					switch verbosity {
+					case 2:
+						fmt.Fprintf(buf, "\t%s():%d\n",
+							frame.FuncName(), frame.FileLine())
+					case 3:
+						fmt.Fprintf(buf, "\t%s:%d\n",
+							frame.RelFileName(), frame.FileLine())
+					case 4:
+						fmt.Fprintf(buf, "\t%s:%d %s()\n",
+							frame.RelFileName(), frame.FileLine(), frame.ShortFuncName())
+					case 5:
+						fmt.Fprintf(buf, "\t%s()\n", frame.FuncName())
+						fmt.Fprintf(buf, "\t\t%s:%d\n", frame.RelFileName(), frame.FileLine())
+					case 6:
+						fmt.Fprintf(buf, "\t%s:%d\n", frame.RelFileName(), frame.FileLine())
+						fmt.Fprintf(buf, "\t\t%s()\n", frame.ShortFuncName())
+					default:
+						fmt.Fprintf(buf, "\t%s:%d\n", frame.File(), frame.FileLine())
+						fmt.Fprintf(buf, "\t\t%s()\n", frame.FuncName())
+					}
 				}
 			}
 			if n < len(stacktrace) {
@@ -276,9 +286,9 @@ func (f Frame) File() string {
 	return file
 }
 
-// Line returns the Line number of source code of the
+// FileLine returns the FileLine number of source code of the
 // function for this Frame's pc.
-func (f Frame) Line() int {
+func (f Frame) FileLine() int {
 	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return 0
@@ -305,8 +315,17 @@ func (f Frame) RelFuncName() string {
 	return name
 }
 
+// function name relative to main package
+func (f Frame) ShortFuncName() string {
+	name := f.FuncName()
+	i := strings.LastIndex(name, "/")
+	name = name[i+1:]
+	i = strings.Index(name, ".")
+	return name[i+1:]
+}
+
 // file name relateive to BasePath or BaseCachePath
-func (f Frame) RelFile() string {
+func (f Frame) RelFileName() string {
 	name := f.File()
 	relPath, ok := trimBasePath(Config.BasePath, name)
 	if ok {

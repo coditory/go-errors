@@ -94,93 +94,116 @@ The default verbosity level is 5.
 
 Verbosity level samples generated with `go run ./samples`:
 ```
->>> Verbosity: 0
+>>> Format: 0
 foo failed
 
->>> Verbosity: 1
+>>> Format: 1
 foo failed
 caused by: bar failed
 
->>> Verbosity: 2
+>>> Format: 2
 foo failed
-    main.foo:34
-    main.main:10
-    runtime.main:250
-    runtime.goexit:1598
+	main.foo():19
+	main.main():10
+	runtime.main():250
+	runtime.goexit():1598
 caused by: bar failed
-    main.bar:38
-    main.foo:33
-    main.main:10
-    runtime.main:250
-    runtime.goexit:1598
+	main.bar():23
+	main.foo():18
+	main.main():10
+	runtime.main():250
+	runtime.goexit():1598
 
->>> Verbosity: 3
+>>> Format: 3
 foo failed
-    ./samples.go:34
-    ./samples.go:10
-    go1.20.2/rc/runtime/proc.go:250
-    go1.20.2/rc/runtime/asm_amd64.s:1598
+	./samples.go:19
+	./samples.go:10
+	go1.20.2/rc/runtime/proc.go:250
+	go1.20.2/rc/runtime/asm_amd64.s:1598
 caused by: bar failed
-    ./samples.go:38
-    ./samples.go:33
-    ./samples.go:10
-    go1.20.2/rc/runtime/proc.go:250
-    go1.20.2/rc/runtime/asm_amd64.s:1598
+	./samples.go:23
+	./samples.go:18
+	./samples.go:10
+	go1.20.2/rc/runtime/proc.go:250
+	go1.20.2/rc/runtime/asm_amd64.s:1598
 
->>> Verbosity: 4
+>>> Format: 4
 foo failed
-    ./samples.go:34 main.foo
-    ./samples.go:10 main.main
-    go1.20.2/rc/runtime/proc.go:250 runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+	./samples.go:19 foo()
+	./samples.go:10 main()
+	go1.20.2/rc/runtime/proc.go:250 main()
+	go1.20.2/rc/runtime/asm_amd64.s:1598 goexit()
 caused by: bar failed
-    ./samples.go:38 main.bar
-    ./samples.go:33 main.foo
-    ./samples.go:10 main.main
-    go1.20.2/rc/runtime/proc.go:250 runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+	./samples.go:23 bar()
+	./samples.go:18 foo()
+	./samples.go:10 main()
+	go1.20.2/rc/runtime/proc.go:250 main()
+	go1.20.2/rc/runtime/asm_amd64.s:1598 goexit()
 
->>> Verbosity: 5 (DEFAULT)
+>>> Format: 5
 foo failed
-    ./samples.go:34
-        main.foo
-    ./samples.go:10
-        main.main
-    go1.20.2/rc/runtime/proc.go:250
-        runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598
-        runtime.goexit
+	main.foo()
+		./samples.go:19
+	main.main()
+		./samples.go:10
+	runtime.main()
+		go1.20.2/rc/runtime/proc.go:250
+	runtime.goexit()
+		go1.20.2/rc/runtime/asm_amd64.s:1598
 caused by: bar failed
-    ./samples.go:38
-        main.bar
-    ./samples.go:33
-        main.foo
-    ./samples.go:10
-        main.main
-    go1.20.2/rc/runtime/proc.go:250
-        runtime.main
-    go1.20.2/rc/runtime/asm_amd64.s:1598
-        runtime.goexit
+	main.bar()
+		./samples.go:23
+	main.foo()
+		./samples.go:18
+	main.main()
+		./samples.go:10
+	runtime.main()
+		go1.20.2/rc/runtime/proc.go:250
+	runtime.goexit()
+		go1.20.2/rc/runtime/asm_amd64.s:1598
 
->>> Verbosity: 6
+>>> Format: 6
 foo failed
-    /Users/mendlik/Development/go/go-errors/samples/samples.go:34
-        main.foo
-    /Users/mendlik/Development/go/go-errors/samples/samples.go:10
-        main.main
-    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-        runtime.main
-    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
-        runtime.goexit
+	./samples.go:19
+		foo()
+	./samples.go:10
+		main()
+	go1.20.2/rc/runtime/proc.go:250
+		main()
+	go1.20.2/rc/runtime/asm_amd64.s:1598
+		goexit()
 caused by: bar failed
-    /Users/mendlik/Development/go/go-errors/samples/samples.go:38
-        main.bar
-    /Users/mendlik/Development/go/go-errors/samples/samples.go:33
-        main.foo
-    /Users/mendlik/Development/go/go-errors/samples/samples.go:10
-        main.main
-    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-        runtime.main
-    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
-        runtime.goexit
+	./samples.go:23
+		bar()
+	./samples.go:18
+		foo()
+	./samples.go:10
+		main()
+	go1.20.2/rc/runtime/proc.go:250
+		main()
+	go1.20.2/rc/runtime/asm_amd64.s:1598
+		goexit()
+
+>>> Format: 7
+foo failed
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:19
+		main.foo()
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
+		main.main()
+	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+		runtime.main()
+	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+		runtime.goexit()
+caused by: bar failed
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:23
+		main.bar()
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:18
+		main.foo()
+	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
+		main.main()
+	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+		runtime.main()
+	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+		runtime.goexit()
+
 ```

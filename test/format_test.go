@@ -32,30 +32,34 @@ func (suite *FormatSuite) TestFormats() {
 		{0, []string{"foo failed\n"}},
 		{1, []string{"foo failed\ncaused by: bar failed\n"}},
 		{2, []string{
-			"foo failed\n\t\\./test_test.foo:\\d+",
-			"caused by: bar failed\n\t\\./test_test.bar:\\d+",
+			"foo failed\n\tgithub.com/coditory/go-errors/test_test.foo\\(\\):\\d+",
+			"caused by: bar failed\n\tgithub.com/coditory/go-errors/test_test.bar\\(\\):\\d+",
 		}},
 		{3, []string{
 			"foo failed\n\t\\./test/format_test.go:\\d+",
 			"caused by: bar failed\n\t\\./test/format_test.go:\\d+",
 		}},
 		{4, []string{
-			"foo failed\n\t\\./test/format_test.go:\\d+ \\./test_test.foo",
-			"caused by: bar failed\n\t\\./test/format_test.go:\\d+ \\./test_test.bar",
+			"foo failed\n\t\\./test/format_test.go:\\d+ foo\\(\\)",
+			"caused by: bar failed\n\t\\./test/format_test.go:\\d+ bar\\(\\)",
 		}},
 		{5, []string{
-			"foo failed\n\t./test/format_test.go:\\d+\n\t\t\\./test_test.foo",
-			"\ncaused by: bar failed\n\t./test/format_test.go:\\d+\n\t\t\\./test_test.bar",
+			"foo failed\n\tgithub.com/coditory/go-errors/test_test.foo\\(\\)\n\t\t\\./test/format_test.go:\\d+\n",
+			"\ncaused by: bar failed\n\tgithub.com/coditory/go-errors/test_test.bar\\(\\)\n\t\t\\./test/format_test.go:\\d+\n",
 		}},
 		{6, []string{
-			"foo failed\n\t.+/test/format_test.go:\\d+\n\t\tgithub.com/coditory/go-errors/test_test.foo\n",
-			"\ncaused by: bar failed\n\t.+/test/format_test.go:\\d+\n\t\tgithub.com/coditory/go-errors/test_test.bar\n",
+			"foo failed\n\t./test/format_test.go:\\d+\n\t\tfoo\\(\\)",
+			"\ncaused by: bar failed\n\t./test/format_test.go:\\d+\n\t\tbar\\(\\)",
+		}},
+		{7, []string{
+			"foo failed\n\t.+/test/format_test.go:\\d+\n\t\tgithub.com/coditory/go-errors/test_test.foo\\(\\)\n",
+			"\ncaused by: bar failed\n\t.+/test/format_test.go:\\d+\n\t\tgithub.com/coditory/go-errors/test_test.bar\\(\\)\n",
 		}},
 	}
+	tests = append(tests, tests[len(tests)-1])
+	tests[len(tests)-1].verbosity = 100
 	tests = append(tests, tests[0])
 	tests[len(tests)-1].verbosity = -100
-	tests = append(tests, tests[len(tests)-2])
-	tests[len(tests)-1].verbosity = 100
 	for _, tt := range tests {
 		name := fmt.Sprintf("Verbosity:%d", tt.verbosity)
 		suite.Run(name, func() {

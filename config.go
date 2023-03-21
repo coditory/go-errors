@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"io"
 	"path"
 	"runtime"
 	"runtime/debug"
@@ -8,6 +9,7 @@ import (
 
 var Config struct {
 	StackTraceFormatter func(err *Error, verbosity int) string
+	FrameFormatter      func(w io.Writer, frame *Frame, verbosity int) string
 	Verbosity           int
 	BasePath            string
 	BaseCachePath       string

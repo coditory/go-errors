@@ -168,7 +168,7 @@ func (suite *ErrorsSuite) TestAs() {
 
 func frameRelFile(err *errors.Error, idx int) string {
 	frame := err.StackTrace()[idx]
-	return frame.RelFile()
+	return frame.RelFileName()
 }
 
 func frameRelFunc(err *errors.Error, idx int) string {
