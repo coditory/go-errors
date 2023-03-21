@@ -330,7 +330,7 @@ func trimBasePath(basePath string, path string) (string, bool) {
 		return "", false
 	}
 	if strings.HasPrefix(basePath, "**/") {
-		i := strings.Index(path, basePath[3:])
+		i := strings.LastIndex(path, basePath[3:])
 		if i > 0 {
 			return "./" + path[i+len(basePath)-3:], true
 		}

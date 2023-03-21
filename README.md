@@ -31,22 +31,22 @@ The exported package is `errors`, basic usage:
 import "github.com/coditory/go-errors"
 
 func main() {
-	err := foo()
-	fmt.Println("Error with stack trace:")
-	fmt.Println(errors.Format(err))
+    err := foo()
+    fmt.Println("Error with stack trace:")
+    fmt.Println(errors.Format(err))
 
-	stderr := fmt.Errorf("std error")
-	fmt.Println("Go std error:")
-	fmt.Println(errors.Format(stderr))
+    stderr := fmt.Errorf("std error")
+    fmt.Println("Go std error:")
+    fmt.Println(errors.Format(stderr))
 }
 
 func foo() error {
-	err := bar()
-	return errors.Wrap(err, "foo failed")
+    err := bar()
+    return errors.Wrap(err, "foo failed")
 }
 
 func bar() error {
-	return errors.New("bar failed")
+    return errors.New("bar failed")
 }
 ```
 
@@ -55,16 +55,16 @@ Output:
 ```
 Error with stack trace:
 foo failed
-	./samples.go:34 main.foo
-	./samples.go:10 main.main
-	go1.20.2/rc/runtime/proc.go:250 runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./samples.go:34 main.foo
+    ./samples.go:10 main.main
+    go1.20.2/rc/runtime/proc.go:250 runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
 caused by: bar failed
-	./samples.go:38 main.bar
-	./samples.go:33 main.foo
-	./samples.go:10 main.main
-	go1.20.2/rc/runtime/proc.go:250 runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./samples.go:38 main.bar
+    ./samples.go:33 main.foo
+    ./samples.go:10 main.main
+    go1.20.2/rc/runtime/proc.go:250 runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
 
 Go std error:
 std error
@@ -94,84 +94,84 @@ caused by: bar failed
 
 >>> Verbosity: 2
 foo failed
-	main.foo:34
-	main.main:10
-	runtime.main:250
-	runtime.goexit:1598
+    main.foo:34
+    main.main:10
+    runtime.main:250
+    runtime.goexit:1598
 caused by: bar failed
-	main.bar:38
-	main.foo:33
-	main.main:10
-	runtime.main:250
-	runtime.goexit:1598
+    main.bar:38
+    main.foo:33
+    main.main:10
+    runtime.main:250
+    runtime.goexit:1598
 
 >>> Verbosity: 3
 foo failed
-	./samples.go:34
-	./samples.go:10
-	go1.20.2/rc/runtime/proc.go:250
-	go1.20.2/rc/runtime/asm_amd64.s:1598
+    ./samples.go:34
+    ./samples.go:10
+    go1.20.2/rc/runtime/proc.go:250
+    go1.20.2/rc/runtime/asm_amd64.s:1598
 caused by: bar failed
-	./samples.go:38
-	./samples.go:33
-	./samples.go:10
-	go1.20.2/rc/runtime/proc.go:250
-	go1.20.2/rc/runtime/asm_amd64.s:1598
+    ./samples.go:38
+    ./samples.go:33
+    ./samples.go:10
+    go1.20.2/rc/runtime/proc.go:250
+    go1.20.2/rc/runtime/asm_amd64.s:1598
 
 >>> Verbosity: 4 (DEFAULT)
 foo failed
-	./samples.go:34 main.foo
-	./samples.go:10 main.main
-	go1.20.2/rc/runtime/proc.go:250 runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./samples.go:34 main.foo
+    ./samples.go:10 main.main
+    go1.20.2/rc/runtime/proc.go:250 runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
 caused by: bar failed
-	./samples.go:38 main.bar
-	./samples.go:33 main.foo
-	./samples.go:10 main.main
-	go1.20.2/rc/runtime/proc.go:250 runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
+    ./samples.go:38 main.bar
+    ./samples.go:33 main.foo
+    ./samples.go:10 main.main
+    go1.20.2/rc/runtime/proc.go:250 runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598 runtime.goexit
 
 >>> Verbosity: 5
 foo failed
-	./samples.go:34
-		main.foo
-	./samples.go:10
-		main.main
-	go1.20.2/rc/runtime/proc.go:250
-		runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598
-		runtime.goexit
+    ./samples.go:34
+        main.foo
+    ./samples.go:10
+        main.main
+    go1.20.2/rc/runtime/proc.go:250
+        runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598
+        runtime.goexit
 caused by: bar failed
-	./samples.go:38
-		main.bar
-	./samples.go:33
-		main.foo
-	./samples.go:10
-		main.main
-	go1.20.2/rc/runtime/proc.go:250
-		runtime.main
-	go1.20.2/rc/runtime/asm_amd64.s:1598
-		runtime.goexit
+    ./samples.go:38
+        main.bar
+    ./samples.go:33
+        main.foo
+    ./samples.go:10
+        main.main
+    go1.20.2/rc/runtime/proc.go:250
+        runtime.main
+    go1.20.2/rc/runtime/asm_amd64.s:1598
+        runtime.goexit
 
 >>> Verbosity: 6
 foo failed
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:34
-		main.foo
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
-		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
-		runtime.goexit
+    /Users/mendlik/Development/go/go-errors/samples/samples.go:34
+        main.foo
+    /Users/mendlik/Development/go/go-errors/samples/samples.go:10
+        main.main
+    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+        runtime.main
+    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+        runtime.goexit
 caused by: bar failed
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:38
-		main.bar
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:33
-		main.foo
-	/Users/mendlik/Development/go/go-errors/samples/samples.go:10
-		main.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
-		runtime.main
-	/Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
-		runtime.goexit
+    /Users/mendlik/Development/go/go-errors/samples/samples.go:38
+        main.bar
+    /Users/mendlik/Development/go/go-errors/samples/samples.go:33
+        main.foo
+    /Users/mendlik/Development/go/go-errors/samples/samples.go:10
+        main.main
+    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/proc.go:250
+        runtime.main
+    /Users/mendlik/.sdkvm/sdk/go/1.20.2/src/runtime/asm_amd64.s:1598
+        runtime.goexit
 ```
