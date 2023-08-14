@@ -76,6 +76,18 @@ func (suite *FormatSuite) TestFormats() {
 	}
 }
 
+func (suite *FormatSuite) TestStackTraceSlice() {
+	err := foo()
+	got := errors.StackTraceSlice(err)
+	suite.Assert().Len(got, 7, "StackTraceSlice has no expected len")
+}
+
+func (suite *FormatSuite) TestStackTraceSliceNoError() {
+	err := fmt.Errorf("some err")
+	got := errors.StackTraceSlice(err)
+	suite.Assert().Len(got, 0, "StackTraceSlice has no expected len")
+}
+
 func foo() error {
 	err := bar()
 	return errors.Wrap(err, "foo failed")

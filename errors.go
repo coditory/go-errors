@@ -131,6 +131,18 @@ func (e *Error) StackTraceString(verbosity int) string {
 	return buf.String()
 }
 
+func StackTraceSlice(err error) []string {
+	var stack []string
+	stacked, ok := err.(*Error)
+	if !ok {
+		return stack
+	}
+	for _, d := range stacked.StackTrace() {
+		stack = append(stack, fmt.Sprintf("%s:%d", d.RelFileName(), d.FileLine()))
+	}
+	return stack
+}
+
 // Creates a new error with a stack trace.
 // Supports interpolating of message parameters.
 //
