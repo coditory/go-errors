@@ -94,7 +94,7 @@ format: ## Format source files
 	@go mod tidy -e
 	@docker run --rm -t -v $(shell pwd):/app -v ~/.cache/golangci-lint/$(GOLANGCI_LINT_VERSION):/root/.cache -w /app \
 		golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) \
-		golangci-lint --fix \
+		golangci-lint run --fix \
 		--deadline=65s \
 		./...
 
