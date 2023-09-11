@@ -22,7 +22,7 @@ jobs:
         run: make ci
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v4
         if: always()
         with:
           annotations_limit: 10
